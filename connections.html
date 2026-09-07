@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Custom Connections</title>
+    <meta property="og:title" content="Custom Connections">
+    <meta property="og:description" content="A custom puzzle maker/loader based on the New York Times' Connections game. Uses the same format as ZSRobinson's Custom Connections.">
+    <meta property="og:url" content="https://tranquanto.github.io/connections.html">
+    <meta property="og:site_name" content="Custom Connections">
+    <style>
+        body {
+            font-family: sans-serif;
+            text-align: center;
+        }
+
+        #options, #editor-categories {
+            display: grid;
+            grid-template-columns: min(30vh, 20vw) min(30vh, 20vw) min(30vh, 20vw) min(30vh, 20vw);
+            grid-template-rows: min(12vh, 12vw) min(12vh, 12vw) min(12vh, 12vw) min(12vh, 12vw);
+            gap: max(6px, min(1vw, 1vh));
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            user-select: none;
+        }
+
+        .category {
+            border-radius: 8px;
+            border: 1px solid #111;
+            grid-column: 1 / 5;
+            position: relative;
+        }
+
+        .category-name {
+            font-size: min(40px, 4vw);
+            font-weight: bold;
+            display: block;
+        }
+
+        .category-terms {
+            position: absolute;
+            font-size: min(24px, 2.5vw);
+            bottom: min(1vw, 1vh);
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        #options > button {
+            cursor: pointer;
+            font: inherit;
+            font-size: min(3.5vh, 2.5vw);
+            font-weight: 700;
+        }
+
+        #options > button.selected {
+            filter: invert(1);
+        }
+
+        #buttons {
+            position: absolute;
+            bottom: 8px;
+            left: 0;
+            width: 100%;
+            user-select: none;
+        }
+
+        #export-btn, #export-play-btn {
+            filter: invert(1);
+            width: 30%;
+        }
+
+        #export-buttons {
+            width: 100%;
+            position: absolute;
+            bottom: 8px;
+            left: 0;
+        }
+
+        #buttons > button {
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        #submit-btn:not(:disabled), #view-results-btn:not(:disabled) {
+            filter: invert(1);
+        }
+
+        button {
+            transition: all 100ms;
+            border-radius: 8px;
+            border: 1px solid #888;
+        }
+
+        #results {
+            border-radius: 10px;
+            width: 40vw;
+            background: #fff;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            filter: drop-shadow(0 0 4px #000);
+        }
+
+        button {
+            padding: min(12px, 0.6vw) min(24px, 1.2vw);
+            font-size: 16px;
+        }
+
+        #results > button, #view-results-btn, #home > button {
+            margin-bottom: 32px;
+        }
+
+        #results > button {
+            cursor: pointer;
+        }
+
+        #results-display {
+            font-size: 26px;
+        }
+
+        button:not(:disabled) {
+            cursor: pointer;
+        }
+
+        button:disabled {
+            border-color: #bbb;
+            cursor: default;
+        }
+
+        #scribbles {
+            border: 1px solid #888;
+        }
+
+        #editor input::placeholder {
+            color: #0005;
+        }
+
+        #editor input {
+            border: none;
+            background: none;
+        }
+
+        #editor-title {
+            font-size: min(40px, 4vw);
+            text-align: right;
+        }
+
+        #editor-author {
+            font-size: min(28px, 3vw);
+            text-align: left;
+        }
+
+        #editor-title, #editor-author {
+            width: 35%;
+        }
+
+        .editor-category > .category-name > input {
+            font-size: min(40px, 4vw);
+            font-weight: bold;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .editor-category input {
+            text-align: center;
+            border: none;
+            background: none;
+            width: 100%;
+            padding: 0;
+        }
+
+        #top-left {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div id="home" style="display: none;">
+        <h1 style="text-decoration: underline; text-decoration-thickness: 4px;">Custom Connections</h1>
+        <button id="import-btn" onclick="importGame(prompt('Paste code here to play:'));">Import to Play</button>
+        <button id="import-editor-btn" onclick="importEditor(prompt('Paste code here to load in editor:'));">Import to Editor</button>
+        <div id="editor">
+            <input id="editor-title" type="text" placeholder="Title">
+            <label for="editor-author" style="font-size: min(16px, 2vw);">by </label>
+            <input id="editor-author" type="text" placeholder="Author">
+            <div id="editor-categories">
+                <div id="editor-yellow" class="editor-category category" style="background-color: #f8dd46;">
+                    <div class="category-name"><input placeholder="Category Name"></div>
+                    <input class="category-terms" placeholder="Terms (Comma-separated)">
+                </div>
+                <div id="editor-green" class="editor-category category" style="background-color: #5dc969;">
+                    <div class="category-name"><input placeholder="Category Name"></div>
+                    <input class="category-terms" placeholder="Terms (Comma-separated)">
+                </div>
+                <div id="editor-blue" class="editor-category category" style="background-color: #7ac3f1;">
+                    <div class="category-name"><input placeholder="Category Name"></div>
+                    <input class="category-terms" placeholder="Terms (Comma-separated)">
+                </div>
+                <div id="editor-purple" class="editor-category category" style="background-color: #af94d4;">
+                    <div class="category-name"><input placeholder="Category Name"></div>
+                    <input class="category-terms" placeholder="Terms (Comma-separated)">
+                </div>
+            </div>
+            <div id="export-buttons">
+                <button id="export-btn" onclick="exportEditor();">Export</button>
+                <button id="export-play-btn" onclick="exportToGame();">Export and Play</button>
+            </div>
+        </div>
+    </div>
+    <div id="game" style="display: none;">
+        <div id="top-left">
+            <button id="return-btn" onclick='location.replace(location.href.split("?")[0]);'>Return</button>
+            <button id="return-editor-btn" onclick='if (confirm("Are you sure? All answers will be revealed.")) importEditor(encoded);'>Open in Editor</button>
+        </div>
+        <div id="metadata">
+            <h1 id="title">Game Name</h1>
+            <span id="author">by Game Creator</span><br><br>
+            <button id="view-results-btn" onclick="document.getElementById('results').style.display = 'block';" disabled>View Results</button>
+        </div>
+        <div id="options"></div>
+        <div id="buttons">
+            <button onclick="shuffleAll();" style="display: none;">Shuffle</button>
+            <button onclick="deselectAll();">Deselect</button>
+            <button onclick="submit();" id="submit-btn">Submit</button>
+            <br><br>
+            <span id="mistakes">Mistakes: 0</span>
+        </div>
+    </div>
+    <div id="results" style="display: none;">
+        <h1>Puzzle complete!</h1>
+        <p id="results-display"></p>
+        <button onclick="copyResults();" id="copy-results-btn">Copy Results</button>
+        <button onclick="document.getElementById('results').style.display = 'none';">Close</button>
+    </div>
+    <script>
+        const shuffle = arr => {
+            let currentIdx = arr.length;
+            while (currentIdx > 0) {
+                let randomIdx = Math.floor(Math.random() * currentIdx--);
+                [arr[currentIdx], arr[randomIdx]] = [arr[randomIdx], arr[currentIdx]];
+            }
+            return arr;
+        }
+
+        const colors = [
+            "#f8dd46",
+            "#5dc969",
+            "#7ac3f1",
+            "#af94d4"
+        ];
+
+        const params = new URLSearchParams(location.search);
+        const encoded = params.get("game");
+        const editEncoded = params.get("edit");
+        let gameData, terms;
+        let selected = new Set();
+        let found = 0, mistakes = 0;
+        let results = [];
+        let attempted = new Set();
+        
+        if (!gameData && encoded) {
+            try {
+                gameData = JSON.parse(atob(encoded));
+            } catch (e) {
+                alert("Invalid game string");
+                document.getElementById("return-btn").click();
+                gameData = null;
+            }
+        } else if (editEncoded) {
+            let content;
+            try {
+                content = JSON.parse(atob(editEncoded));
+            } catch (e) {
+                alert("Invalid game string (to editor)");
+                document.getElementById("return-btn").click();
+                content = null;
+            }
+
+            if (content) {
+                document.getElementById("editor-title").value = content.title;
+                document.getElementById("editor-author").value = content.author;
+
+                document.getElementById("editor-yellow").querySelector(".category-name > input").value = content.names[0];
+                document.getElementById("editor-green").querySelector(".category-name > input").value = content.names[1];
+                document.getElementById("editor-blue").querySelector(".category-name > input").value = content.names[2];
+                document.getElementById("editor-purple").querySelector(".category-name > input").value = content.names[3];
+
+                document.getElementById("editor-yellow").querySelector(".category-terms").value = content.words[0].join(", ");
+                document.getElementById("editor-green").querySelector(".category-terms").value = content.words[1].join(", ");
+                document.getElementById("editor-blue").querySelector(".category-terms").value = content.words[2].join(", ");
+                document.getElementById("editor-purple").querySelector(".category-terms").value = content.words[3].join(", ");
+            }
+        }
+
+        if (gameData) {
+            document.getElementById("title").innerText = gameData.title;
+            document.getElementById("author").innerText = `by ${gameData.author}`;
+
+            terms = shuffle(gameData.words.reduce((a, b) => a.concat(b), []));
+
+            terms.forEach((g, i) => {
+                const button = document.createElement("button");
+                button.innerText = g.toUpperCase();
+                button.id = `option-${i}`;
+                button.addEventListener("click", () => {
+                    if (button.classList.contains("selected")) {
+                        deselect(i, button);
+                    } else if (selected.size < 4) {
+                        select(i, button);
+                    }
+                });
+                document.getElementById("options").appendChild(button);
+            });
+
+            document.getElementById("game").style.display = "";
+            document.getElementById("home").style.display = "none";
+        } else {
+            document.getElementById("home").style.display = "";
+            document.getElementById("game").style.display = "none";
+        }
+
+        function select(i, button = document.getElementById(`option-${i}`)) {
+            button.classList.add("selected");
+            selected.add(i);
+
+            if (selected.size === 4) {
+                document.getElementById("submit-btn").removeAttribute("disabled");
+            }
+        }
+
+        function deselect(i, button = document.getElementById(`option-${i}`)) {
+            document.getElementById("submit-btn").setAttribute("disabled", true);
+            button.classList.remove("selected");
+            selected.delete(i);
+        }
+
+        function deselectAll() {
+            selected.forEach(i => {
+                document.getElementById(`option-${i}`).classList.remove("selected");
+            });
+            selected.clear();
+        }
+
+        function submit() {
+            const key = Array.from(selected).sort((a, b) => a - b).join();
+            if (attempted.has(key)) return alert("Already guessed!");
+            attempted.add(key);
+
+            let selectedTerms = [];
+            selected.forEach(g => selectedTerms.push(terms[g]));
+
+            let result = "";
+            let correct = true;
+            let idx;
+            let colorArr = [];
+
+            for (const term of selectedTerms) {
+                for (const a in gameData.words) {
+                    const arr = gameData.words[a];
+                    if (arr.includes(term)) {
+                        if (idx === undefined) idx = a;
+                        else if (idx !== a) correct = false;
+
+                        result += ["🟨", "🟩", "🟦", "🟪"][a];
+                        if (colorArr[a] === undefined) colorArr[a] = 0;
+                        colorArr[a]++;
+                    }
+                }
+            }
+            results.push(result);
+
+            if (colorArr.reduce((a, b) => Math.max(a, b), 0) === 3) alert("One away...");
+
+            if (correct !== false) {
+                found++;
+                const category = document.createElement("div");
+                category.classList.add("category");
+                category.style.backgroundColor = colors[idx];
+
+                const name = document.createElement("span");
+                name.classList.add("category-name");
+                name.innerText = gameData.names[idx];
+
+                const terms = document.createElement("span");
+                terms.classList.add("category-terms");
+                terms.innerText = gameData.words[idx].join(", ");
+                
+                category.append(name, terms);
+                document.getElementById("options").insertBefore(category, document.getElementById("options").querySelector("button"));
+
+                selected.forEach(g => {
+                    document.getElementById(`option-${g}`).remove();
+                });
+                selected.clear();
+            } else {
+                mistakes++;
+                document.getElementById("mistakes").innerText = `Mistakes: ${mistakes}`;
+                deselectAll();
+            }
+
+            if (found === 4) {
+                document.getElementById("view-results-btn").removeAttribute("disabled");
+                document.getElementById("results").style.display = "block";
+                document.getElementById("results-display").innerText = results.join("\n");
+            }
+        }
+
+        function copyResults() {
+            navigator.clipboard.writeText(`${gameData.title}\nby ${gameData.author}\n\n${results.join("\n")}`);
+            document.getElementById("copy-results-btn").innerText = "Copied!";
+        }
+
+        function importGame(value) {
+            if (!value) return;
+            const a = document.createElement("a");
+            a.href = "?game=" + value;
+            a.click();
+        }
+
+        function importEditor(value) {
+            if (!value) return;
+            const a = document.createElement("a");
+            a.href = "?edit=" + value;
+            a.click();
+        }
+
+        function getEditorCode() {
+            const title = document.getElementById("editor-title").value.trim();
+            const author = document.getElementById("editor-author").value.trim();
+
+            const yellowName = document.getElementById("editor-yellow").querySelector(".category-name > input").value.trim();
+            const greenName = document.getElementById("editor-green").querySelector(".category-name > input").value.trim();
+            const blueName = document.getElementById("editor-blue").querySelector(".category-name > input").value.trim();
+            const purpleName = document.getElementById("editor-purple").querySelector(".category-name > input").value.trim();
+
+            const yellowTerms = document.getElementById("editor-yellow").querySelector("input.category-terms").value.split(",").map(g => g.trim()).filter(g => g !== "");
+            const greenTerms = document.getElementById("editor-green").querySelector("input.category-terms").value.split(",").map(g => g.trim()).filter(g => g !== "");
+            const blueTerms = document.getElementById("editor-blue").querySelector("input.category-terms").value.split(",").map(g => g.trim()).filter(g => g !== "");
+            const purpleTerms = document.getElementById("editor-purple").querySelector("input.category-terms").value.split(",").map(g => g.trim()).filter(g => g !== "");
+
+            let errors = [];
+            if (title.length === 0) errors.push("Title is not set.");
+            if (author.length === 0) errors.push("Author is not set.");
+
+            if (yellowName.length === 0) errors.push("Yellow category has no name.");
+            if (greenName.length === 0) errors.push("Green category has no name.");
+            if (blueName.length === 0) errors.push("Blue category has no name.");
+            if (purpleName.length === 0) errors.push("Purple category has no name.");
+
+            if (yellowTerms.length !== 4) errors.push(`All categories must have exactly 4 terms. Yellow has ${yellowTerms.length}.`);
+            if (greenTerms.length !== 4) errors.push(`All categories must have exactly 4 terms. Green has ${greenTerms.length}.`);
+            if (blueTerms.length !== 4) errors.push(`All categories must have exactly 4 terms. Blue has ${blueTerms.length}.`);
+            if (purpleTerms.length !== 4) errors.push(`All categories must have exactly 4 terms. Purple has ${purpleTerms.length}.`);
+
+            if (errors.length > 0) {
+                alert(errors.join("\n"));
+                return;
+            }
+
+            const obj = {
+                title, author,
+                names: [
+                    yellowName,
+                    greenName,
+                    blueName,
+                    purpleName
+                ],
+                words: [
+                    yellowTerms,
+                    greenTerms,
+                    blueTerms,
+                    purpleTerms
+                ]
+            };
+
+            return btoa(JSON.stringify(obj));
+        }
+
+        function exportEditor() {
+            navigator.clipboard.writeText(getEditorCode());
+            alert("The exported game has been written to your clipboard.");
+        }
+
+        function exportToGame() {
+            importGame(getEditorCode());
+        }
+
+        document.getElementById("submit-btn").setAttribute("disabled", true);
+        document.getElementById("view-results-btn").setAttribute("disabled", true);
+
+        const canvas = document.createElement("canvas");
+        canvas.width = 1000;
+        canvas.height = 1000;
+        /** @type {CanvasRenderingContext2D} */
+        const ctx = canvas.getContext("2d");
+        let x = Math.floor(Math.random() * canvas.width), y = Math.floor(Math.random() * canvas.height), theta = Math.random(), dtheta = 0;
+        ctx.fillStyle = "#fff";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = "#aaa";
+        ctx.lineWidth = 1;
+
+        for (let i = 0; i < 1000; i++) {
+            dtheta = (Math.random() - 0.5) / 24;
+            for (let j = 0; j < 25; j++) {
+                theta += dtheta;
+                const dx = Math.cos(theta);
+                const dy = Math.sin(theta);
+
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.lineTo(x + dx, y + dy);
+                ctx.stroke();
+
+                x += dx;
+                y += dy;
+
+                while (x < 0) x += canvas.width;
+                while (x >= canvas.width) x -= canvas.width;
+
+                while (y < 0) y += canvas.height;
+                while (y >= canvas.height) y -= canvas.height;
+            }
+        }
+
+        document.body.style.backgroundImage = `url(${canvas.toDataURL()})`;
+    </script>
+</body>
+</html>
