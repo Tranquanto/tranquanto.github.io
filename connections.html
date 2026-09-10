@@ -34,17 +34,18 @@
         }
 
         .category-name {
-            font-size: min(40px, 4vw);
+            font-size: min(36px, 3.5vw);
             font-weight: bold;
             display: block;
         }
 
         .category-terms {
             position: absolute;
-            font-size: min(24px, 2.5vw);
+            font-size: min(24px, 2.2vw);
             bottom: min(1vw, 1vh);
             left: 50%;
             transform: translateX(-50%);
+            width: 100%;
         }
 
         #options > button {
@@ -282,6 +283,7 @@
 
             if (content) {
                 document.getElementById("editor-title").value = content.title;
+                document.querySelector("title").innerText = `Editing ${content.title} | Custom Connections`;
                 document.getElementById("editor-author").value = content.author;
 
                 document.getElementById("editor-yellow").querySelector(".category-name > input").value = content.names[0];
@@ -298,6 +300,7 @@
 
         if (gameData) {
             document.getElementById("title").innerText = gameData.title;
+            document.querySelector("title").innerText = `${gameData.title} | Custom Connections`;
             document.getElementById("author").innerText = `by ${gameData.author}`;
 
             terms = shuffle(gameData.words.reduce((a, b) => a.concat(b), []));
