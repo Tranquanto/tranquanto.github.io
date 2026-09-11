@@ -265,7 +265,7 @@
         
         if (!gameData && encoded) {
             try {
-                gameData = JSON.parse(atob(encoded));
+                gameData = JSON.parse(decodeURIComponent(atob(encoded)));
             } catch (e) {
                 alert("Invalid game string");
                 document.getElementById("return-btn").click();
@@ -274,7 +274,7 @@
         } else if (editEncoded) {
             let content;
             try {
-                content = JSON.parse(atob(editEncoded));
+                content = JSON.parse(decodeURIComponent(atob(editEncoded)));
             } catch (e) {
                 alert("Invalid game string (to editor)");
                 document.getElementById("return-btn").click();
@@ -480,7 +480,7 @@
                 ]
             };
 
-            return btoa(JSON.stringify(obj));
+            return btoa(encodeURIComponent(JSON.stringify(obj)));
         }
 
         function exportEditor() {
